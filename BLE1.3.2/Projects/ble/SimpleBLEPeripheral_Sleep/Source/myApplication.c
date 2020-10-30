@@ -6,7 +6,7 @@ static uint16 simpleBLECharHdl = 0;
 
 /* 全局变量 macAddr, 保存连接到主机的从机设备的mac地址 */
 // 使用时要在头文件中声明
-uint8 *macAddr; 
+uint8 macAddr[6]; 
 
 // 获得从机状态
 gaprole_States_t state;

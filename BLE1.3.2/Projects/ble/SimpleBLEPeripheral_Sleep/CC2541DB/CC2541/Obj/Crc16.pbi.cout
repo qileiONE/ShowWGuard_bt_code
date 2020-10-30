@@ -1,4 +1,4 @@
-"E:\work\守卫手环项目\code\BT\蓝牙从机V3.0\ShowWGuard\BLE1.3.2\Components\hal\target\CC2540EB\hal_key.c"
+"E:\work\守卫手环项目\code\BT\蓝牙从机V3.0\ShowWGuard\BLE1.3.2\Projects\ble\SimpleBLEPeripheral_Sleep\Source\Crc16.c"
 -std=c99
 -ferror-limit=100
 -I

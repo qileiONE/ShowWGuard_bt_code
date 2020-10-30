@@ -103,6 +103,10 @@ uint16_t readTempPoint(uint16_t year,uint16_t month,uint16_t day,uint16_t num)
   {
     data = readEeprom(EEPROM_BASE2_ADD + num);
   }
+  else
+  {
+    saveTempPoint(year,month,day,1,365);
+  }
 
   return data;
 }

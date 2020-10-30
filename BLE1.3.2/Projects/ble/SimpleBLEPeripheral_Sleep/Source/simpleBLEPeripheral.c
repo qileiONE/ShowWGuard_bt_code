@@ -93,6 +93,7 @@
 #include "eeprom.h"
 
 #include "algorithm.h"
+#include "Crc16.h"
     
 /*********************************************************************
  * MACROS
@@ -157,6 +158,9 @@
 
 int timerCount = 0;
 int8 LCD_NeedRun = 1;
+uint8_t measure_flag;
+uint16_t measure_pos;
+
 uint8 KEY_NeedPrcoess = 0;
 uint8 DIS_Item = 0;
 
@@ -474,6 +478,7 @@ void SimpleBLEPeripheral_Init( uint8 task_id )
   HalAdcRead( HAL_ADC_CHANNEL_0, HAL_ADC_RESOLUTION_12 );
   HalAdcRead( HAL_ADC_CHANNEL_0, HAL_ADC_RESOLUTION_12 );
   GPIO_Init(0,6);
+ // Uart_Init();
   Motor_OFF();
   maxim_max30102_reset();
   maxim_max30102_read_reg(REG_INTR_STATUS_1,&uch_dummy);
@@ -750,8 +755,10 @@ uint8 timerCount2 = 0;
 static void performPeriodicTask( void )
 {
   uint8 tempbuf[12] = {0};
-  char displayBuf[50];
+  char displayBuf[20];
   float tmpf;
+  uint16 CurrentTemp;
+  uint8 num_pos;
   //uint32 temp32;
   uint16_t BatteryCap;
   UTCTimeStruct Ti;
@@ -771,6 +778,7 @@ static void performPeriodicTask( void )
          // HalLcdDisOn();
        //   timerCount2 = 0;
           tmpf = GetTemperature1();
+          
           sprintf(displayBuf,"%.1f`C",tmpf);
           HalLcdShowString(18,3,displayBuf,32);
           tmpf = GetTemperature();
@@ -856,9 +864,23 @@ static void performPeriodicTask( void )
   tempbuf[19]=(Ti.seconds)%10+'0'; */
   
   if( timerCount > 900 ){ // 15分钟的定时
-    timerUserFunc(); // 执行用户自定义的函数
+  //  timerUserFunc(); // 执行用户自定义的函数
+    if((Ti.minutes <= 15) && (Ti.minutes > 0))
+      num_pos = 1;
+    else if((Ti.minutes <= 30) && (Ti.minutes > 15))
+      num_pos = 2;
+    else if((Ti.minutes <= 45) && (Ti.minutes > 30))
+      num_pos = 3;
+    else if((Ti.minutes <= 60) && (Ti.minutes > 45))
+      num_pos = 4;
+    else 
+      num_pos = 1;
+    num_pos = num_pos + (Ti.hour*4);
+    tmpf = GetTemperature1();
+    CurrentTemp = tmpf * 10;
+    saveTempPoint(Ti.year,Ti.month,Ti.day,num_pos,CurrentTemp);
     LCD_NeedRun = 1;
-    HalLcdWriteString( "Alarm Clock", HAL_LCD_LINE_7 );
+   // HalLcdWriteString( "Alarm Clock", HAL_LCD_LINE_7 );
     timerCount = 0;
   }
   
@@ -884,6 +906,142 @@ static void performPeriodicTask( void )
 }
 
 /* */
+
+
+void BLESendCurrentTemp(void)
+{
+  uint16_t crc;
+  uint16_t tmp16;
+  uint8_t bleSendBuf[20];
+
+  tmp16 = GetTemperature1()*100;
+  if((tmp16%10)>=5)
+  {
+    tmp16 = tmp16/10 + 1;
+  }
+  else 
+  {
+    tmp16 = tmp16/10;
+  }
+  bleSendBuf[0] = 0x03;
+  bleSendBuf[1] = 0x10;
+  bleSendBuf[2] = macAddr[0];
+  bleSendBuf[3] = macAddr[1];
+  bleSendBuf[4] = macAddr[2];
+  bleSendBuf[5] = macAddr[3];
+  bleSendBuf[6] = macAddr[4];
+  bleSendBuf[7] = macAddr[5];
+  bleSendBuf[8] = 0;
+  bleSendBuf[9] = 0;//CurrentPoint;
+  bleSendBuf[10] = 1;
+  bleSendBuf[11] = tmp16 >> 8;
+  bleSendBuf[12] = tmp16 & 0xff;
+
+  crc = CRC16(bleSendBuf,13);
+
+  bleSendBuf[13] = crc >> 8;
+  bleSendBuf[14] = crc & 0xff;
+
+  simpleBLE_SendData(nGUA_ConnHandle, bleSendBuf, 15);
+}
+void BLESendReply(uint8_t date,uint8_t point,uint8_t num)
+{
+  uint16_t crc;
+  uint16_t data;
+  UTCTimeStruct Ti;
+  osalTimeUpdate(  );
+  osal_ConvertUTCTime(&Ti,osal_getClock());
+  
+  uint8_t bleSendBuf[20];
+  if((point == 0)&&(num == 0))
+  {
+      BLESendCurrentTemp();
+      return;
+  }
+  data = readTempPoint(Ti.year,Ti.month,Ti.day,point);
+  bleSendBuf[0] = 0x03;
+  bleSendBuf[1] = 0x10;
+  bleSendBuf[2] = macAddr[0];
+  bleSendBuf[3] = macAddr[1];
+  bleSendBuf[4] = macAddr[2];
+  bleSendBuf[5] = macAddr[3];
+  bleSendBuf[6] = macAddr[4];
+  bleSendBuf[7] = macAddr[5];
+  bleSendBuf[8] = 0;
+  bleSendBuf[9] = point;
+  bleSendBuf[10] = 1;
+  bleSendBuf[11] = data >> 8;
+  bleSendBuf[12] = data & 0xff;
+  
+  crc = CRC16(bleSendBuf,13);
+  
+  bleSendBuf[13] = crc >> 8;
+  bleSendBuf[14] = crc & 0xff;
+  simpleBLE_SendData(nGUA_ConnHandle, bleSendBuf, 15);
+}
+
+void BLESendRece(uint8_t cmd,uint8_t status)
+{
+    uint16_t crc;
+    uint8_t bleSendBuf[20];
+    bleSendBuf[0] = 0x03;
+    bleSendBuf[1] = cmd;
+    bleSendBuf[2] = macAddr[0];
+    bleSendBuf[3] = macAddr[1];
+    bleSendBuf[4] = macAddr[2];
+    bleSendBuf[5] = macAddr[3];
+    bleSendBuf[6] = macAddr[4];
+    bleSendBuf[7] = macAddr[5];
+    
+    crc = CRC16(bleSendBuf,8);
+    
+    bleSendBuf[8] = crc >> 8;
+    bleSendBuf[9] = crc & 0xff;
+    
+    simpleBLE_SendData(nGUA_ConnHandle,bleSendBuf,10);
+}
+
+void BLESendToCard(void)
+{
+    uint8_t i;
+    uint16_t crc;
+    uint16_t data;
+    uint8_t bleSendBuf[205];
+    UTCTimeStruct Ti;
+    osalTimeUpdate(  );
+    
+    bleSendBuf[0] = 0x03;
+    bleSendBuf[1] = 0x40;//0x11;
+    bleSendBuf[2] = macAddr[0];
+    bleSendBuf[3] = macAddr[1];
+    bleSendBuf[4] = macAddr[2];
+    bleSendBuf[5] = macAddr[3];
+    bleSendBuf[6] = macAddr[4];
+    bleSendBuf[7] = macAddr[5];
+    bleSendBuf[8] = 0;
+    bleSendBuf[9] = 1;
+    bleSendBuf[10] = 96;
+    
+    for(i=0;i<96;i++)
+    {
+        data = readTempPoint(Ti.year,Ti.month,Ti.day,i+1);
+        bleSendBuf[11 + i*2] = data >> 8;
+        bleSendBuf[12 + i*2] = data & 0xff;
+    }
+    
+    crc = CRC16(bleSendBuf,11 + 96*2);
+    
+    bleSendBuf[11 + 96*2] = crc >> 8;
+    bleSendBuf[12 + 96*2] = crc & 0xff;
+    
+    
+    // simpleBLE_SendData(nGUA_ConnHandle,bleSendBuf,13 + 96*2); 
+   
+    for(i=0;i<10;i++)
+      simpleBLE_SendData(nGUA_ConnHandle,bleSendBuf+20*i,20);  
+    simpleBLE_SendData(nGUA_ConnHandle,bleSendBuf+200,5);  
+}
+
 static void sendTask( void )
 {  
   /* test of adc */
@@ -895,6 +1053,7 @@ static void sendTask( void )
   value = HalAdcRead( HAL_ADC_CHANNEL_0, HAL_ADC_RESOLUTION_12 );
     
   HalLcdWriteStringValue( " value2:", value, 10, HAL_LCD_LINE_8 );*/
+ // BLESendCurrentTemp();
   
   
 }
@@ -935,16 +1094,56 @@ static void simpleProfileChangeCB( uint8 paramID )
     // 添加的代码， 表示收到主机对 CHAR6 特征值发送过来的数据了
     case SIMPLEPROFILE_CHAR6:{
       uint8 newChar6Value[SIMPLEPROFILE_CHAR6_LEN];
+      uint16_t crc;
+      uint8_t buf_D[4];
+      uint32_t tmp32;
+      GAPRole_GetParameter(GAPROLE_CONNHANDLE, &nGUA_ConnHandle); 
       SimpleProfile_GetParameter( SIMPLEPROFILE_CHAR6, newChar6Value, &returnBytes );
       
       if(returnBytes > 0) {
         LCD_NeedRun = 1;
-        HalLcdWriteString(" Received: ", HAL_LCD_LINE_6 );
-        HalLcdWriteString((char*)newChar6Value, HAL_LCD_LINE_7 );
+        HalLcdDisOn();
+        HalLcdWriteString(" Received: ", HAL_LCD_LINE_8 );
+        //HalLcdWriteString((char*)newChar6Value, HAL_LCD_LINE_7 );
+     //   BLESendCurrentTemp();
+        crc = CRC16(newChar6Value,returnBytes);
+        if(crc != 0)
+            ;//return;
+        if(newChar6Value[0] == 0x01)
+        {
+          if((newChar6Value[1] == 0x10)&&(returnBytes > 10))
+          {
+              BLESendReply(newChar6Value[2],newChar6Value[3],newChar6Value[4]);
+              setUTCTime(newChar6Value[11],newChar6Value[10],newChar6Value[9],newChar6Value[8],newChar6Value[7],(((uint16_t)newChar6Value[5]<<8) + newChar6Value[6]));
+          }
+          else if((newChar6Value[1] == 0x01)&&(returnBytes>13))
+          {
+              buf_D[0] = *(newChar6Value+5);
+              buf_D[1] = *(newChar6Value+4);
+              buf_D[2] = *(newChar6Value+3);
+              buf_D[3] = *(newChar6Value+2);
+              tmp32 = *(int32_t*)buf_D;
+
+              tmpCaliK = (float)tmp32/10000;
+
+              buf_D[0] = *(newChar6Value+9);
+              buf_D[1] = *(newChar6Value+8);
+              buf_D[2] = *(newChar6Value+7);
+              buf_D[3] = *(newChar6Value+6);
+              tmp32 = *(int32_t*)buf_D;
+
+              tmpCaliB = (float)tmp32/10000;
+
+              saveTempCali(tmpCaliK,tmpCaliB);
+              BLESendRece(newChar6Value[1],0);
+          }
+          else if(newChar6Value[1] == 0x40)
+          {
+            BLESendToCard();
+          }
+        }
+
         
-        /*************BLE RECV  User Coding here*************/
-        
-        /****************************************************/
       }
     }  
     break;

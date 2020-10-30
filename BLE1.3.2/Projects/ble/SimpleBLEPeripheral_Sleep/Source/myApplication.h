@@ -28,7 +28,7 @@ extern float tmpCaliB;
 
 extern gaprole_States_t state;
 
-extern uint8 *macAddr;
+extern uint8 macAddr[6];
 
 //typedef void (*npiCBack_t) ( uint8 port, uint8 event );
 

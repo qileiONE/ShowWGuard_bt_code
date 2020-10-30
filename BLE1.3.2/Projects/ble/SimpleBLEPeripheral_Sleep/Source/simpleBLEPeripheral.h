@@ -82,7 +82,7 @@ extern void SimpleBLEPeripheral_Init( uint8 task_id );
 extern uint16 SimpleBLEPeripheral_ProcessEvent( uint8 task_id, uint16 events );
 
 
-extern uint8 *macAddr;
+extern uint8 macAddr[6];
 extern int8 LCD_NeedRun;
 extern uint8 KEY_NeedPrcoess;
 extern uint8 DIS_Item;

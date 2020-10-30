@@ -5691,6 +5691,12 @@
       <name>$PROJ_DIR$\..\Source\algorithm.h</name>
     </file>
     <file>
+      <name>$PROJ_DIR$\..\Source\Crc16.c</name>
+    </file>
+    <file>
+      <name>$PROJ_DIR$\..\Source\Crc16.h</name>
+    </file>
+    <file>
       <name>$PROJ_DIR$\..\Source\eeprom.c</name>
     </file>
     <file>
