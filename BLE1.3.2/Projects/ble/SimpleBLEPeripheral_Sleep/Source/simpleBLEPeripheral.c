@@ -505,6 +505,9 @@ void SimpleBLEPeripheral_Init( uint8 task_id )
   
   HalLcdClear();
   HalLcdDisOff();
+  DIS_Item = 0;
+  KEY_NeedPrcoess = 1;
+  HalLcdDisOn();
 }
 
 /*********************************************************************
@@ -676,7 +679,7 @@ static void peripheralStateNotificationCB( gaprole_States_t newState )
         LCD_NeedRun = 1;
           // Display device address
           //HalLcdWriteString( bdAddr2Str( ownAddress ),  HAL_LCD_LINE_2 );
-          HalLcdWriteString( " Initialized",  HAL_LCD_LINE_3 );
+          //HalLcdWriteString( " Initialized",  HAL_LCD_LINE_3 );
       }
       break;
 
@@ -684,14 +687,14 @@ static void peripheralStateNotificationCB( gaprole_States_t newState )
         state = GAPROLE_ADVERTISING;
         
          LCD_NeedRun = 1;
-          HalLcdWriteString( " Advertising",  HAL_LCD_LINE_3 );
+          //HalLcdWriteString( " Advertising",  HAL_LCD_LINE_3 );
       }
       break;
 
     case GAPROLE_CONNECTED: {
         state = GAPROLE_CONNECTED;
          LCD_NeedRun = 1;
-          HalLcdWriteString( " Connected",  HAL_LCD_LINE_3 );
+          //HalLcdWriteString( " Connected",  HAL_LCD_LINE_3 );
       }
       break;
 
@@ -699,7 +702,7 @@ static void peripheralStateNotificationCB( gaprole_States_t newState )
         state = GAPROLE_WAITING;
       
           LCD_NeedRun = 1;
-          HalLcdWriteString( " Disconnected",  HAL_LCD_LINE_3 );
+          //HalLcdWriteString( " Disconnected",  HAL_LCD_LINE_3 );
       }
       break;
 
@@ -707,7 +710,7 @@ static void peripheralStateNotificationCB( gaprole_States_t newState )
         state = GAPROLE_WAITING_AFTER_TIMEOUT;
       
         LCD_NeedRun = 1;
-          HalLcdWriteString( " TimedOut",  HAL_LCD_LINE_3 );
+         // HalLcdWriteString( " TimedOut",  HAL_LCD_LINE_3 );
       }
       break;
 
@@ -831,16 +834,19 @@ static void performPeriodicTask( void )
 
   osalTimeUpdate(  );
   osal_ConvertUTCTime(&Ti,osal_getClock());
-  HalLcdWriteStringValue("      heart_cnt",heart_cnt,10,HAL_LCD_LINE_8);
+  //HalLcdWriteStringValue("      heart_cnt",heart_cnt,10,HAL_LCD_LINE_8);
   if(KEY_NeedPrcoess == 1)
   {
    // KEY_NeedPrcoess = 0;
     switch(DIS_Item)
     {
       case 0:
+          sprintf(displayBuf,"ShowWGuard",tmpf);
+          HalLcdShowString(20,3,displayBuf,16);
+          break;
       case 1:
         {
-         // HalLcdClear();
+         // HalLcdClear();10
          // HalLcdDisOn();
        //   timerCount2 = 0;
           tmpf = GetTemperature1();
@@ -945,12 +951,12 @@ static void performPeriodicTask( void )
             //dis_change_flag ~= dis_change_flag;
             if(dis_change_flag)
             {
-              sprintf(displayBuf,"--");
+              sprintf(displayBuf,"---");
               HalLcdShowString(30,3,displayBuf,32);
             }
             else
             {
-              sprintf(displayBuf,"--");
+              sprintf(displayBuf,"   ");
               HalLcdShowString(30,3,displayBuf,32);
             }
             
@@ -1046,7 +1052,7 @@ static void performPeriodicTask( void )
   tempbuf[18]=(Ti.seconds)/10+'0';  
   tempbuf[19]=(Ti.seconds)%10+'0'; */
   
-  if( timerCount > 900 ){ // 15分钟的定时
+  if( timerCount > 1500 ){ // 15分钟的定时
   //  timerUserFunc(); // 执行用户自定义的函数
     if((Ti.minutes <= 15) && (Ti.minutes > 0))
       num_pos = 1;
@@ -1074,7 +1080,7 @@ static void performPeriodicTask( void )
     HalLcdDisOff();
   }
   
-  if( LCD_NeedRun ){   
+  /*if( LCD_NeedRun ){   
     switch(state){
       case GAPROLE_INIT: HalLcdWriteString( " Initialized", HAL_LCD_LINE_3 );break;
       case GAPROLE_STARTED: HalLcdWriteString( " Started", HAL_LCD_LINE_3 );break;
@@ -1085,7 +1091,7 @@ static void performPeriodicTask( void )
       case GAPROLE_ERROR:HalLcdWriteString( " Error ...", HAL_LCD_LINE_3 );break;
       default:break;
     }
-  }
+  }*/
 }
 
 /* */
