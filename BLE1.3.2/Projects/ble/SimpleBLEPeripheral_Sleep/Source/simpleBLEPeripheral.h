@@ -86,6 +86,8 @@ extern uint8 macAddr[6];
 extern int8 LCD_NeedRun;
 extern uint8 KEY_NeedPrcoess;
 extern uint8 DIS_Item;
+extern uint8 heart_flag;
+extern uint8 heart_cnt;
 extern gaprole_States_t state;
 
 /*********************************************************************

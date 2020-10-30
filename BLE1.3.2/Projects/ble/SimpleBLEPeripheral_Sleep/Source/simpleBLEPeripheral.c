@@ -105,7 +105,7 @@
 
 // How often to perform periodic event
 #define SBP_PERIODIC_EVT_PERIOD                   1000
-#define SBP_PERIODIC_EVT_PERIOD2                   1000 // 发送数据的周期，可以修改，现在是 1 秒发一次
+#define SBP_PERIODIC_EVT_PERIOD2                    3// 发送数据的周期，可以修改，现在是 1 秒发一次
 
 // What is the advertising interval when device is discoverable (units of 625us, 160=100ms)
 #define DEFAULT_ADVERTISING_INTERVAL          (160*10)
@@ -161,6 +161,8 @@ int8 LCD_NeedRun = 1;
 uint8_t measure_flag;
 uint16_t measure_pos;
 
+uint8 heart_flag = 0;
+uint8 heart_cnt;
 uint8 KEY_NeedPrcoess = 0;
 uint8 DIS_Item = 0;
 
@@ -566,7 +568,7 @@ uint16 SimpleBLEPeripheral_ProcessEvent( uint8 task_id, uint16 events )
     return (events ^ SBP_PERIODIC_EVT);
   }
  
-  /*if ( events & SBP_PERIODIC_EVT2 ){
+  if ( events & SBP_PERIODIC_EVT2 ){
     // Restart timer
     if ( SBP_PERIODIC_EVT_PERIOD2 ){
       osal_start_timerEx( simpleBLEPeripheral_TaskID, SBP_PERIODIC_EVT2, SBP_PERIODIC_EVT_PERIOD2 );
@@ -574,7 +576,7 @@ uint16 SimpleBLEPeripheral_ProcessEvent( uint8 task_id, uint16 events )
     // Perform periodic application task
     sendTask();
     return (events ^ SBP_PERIODIC_EVT2);
-  }*/
+  }
 
 #if defined ( PLUS_BROADCASTER )
   if ( events & SBP_ADV_IN_CONNECTION_EVT )
@@ -737,6 +739,68 @@ static void peripheralStateNotificationCB( gaprole_States_t newState )
 
 }
 
+float f_temp;
+void heart_get_task()
+{
+  
+  if(heart_flag  == 1)
+  {
+    if(heart_cnt < 100)
+    {
+      aun_red_buffer[heart_cnt+50 - 50] = aun_red_buffer[heart_cnt+50];
+      aun_ir_buffer[heart_cnt+50 - 50] = aun_ir_buffer[heart_cnt+50];
+
+      //update the signal min and max
+      if(un_min > aun_red_buffer[heart_cnt+50])
+          un_min = aun_red_buffer[heart_cnt+50];
+      if(un_max < aun_red_buffer[heart_cnt+50])
+          un_max = aun_red_buffer[heart_cnt+50];
+      
+      heart_cnt ++;
+    }
+    else if((heart_cnt >= 100)&&(heart_cnt < 150))
+    {
+      un_prev_data = aun_red_buffer[heart_cnt - 1];
+      while(max30102_INTPin == 1)
+      //{
+        maxim_max30102_read_fifo((aun_red_buffer + heart_cnt ), (aun_ir_buffer + heart_cnt ));
+
+      //calculate the brightness of the LED
+        if(aun_red_buffer[heart_cnt + 100] > un_prev_data)
+        {
+            f_temp = aun_red_buffer[heart_cnt + 100] - un_prev_data;
+            f_temp /= (un_max - un_min);
+            f_temp *= 255;
+            f_temp = un_brightness - f_temp;
+            if(f_temp < 0)
+                un_brightness = 0;
+            else
+                un_brightness = (int)f_temp;
+        }
+        else
+        {
+            f_temp = un_prev_data - aun_red_buffer[heart_cnt + 100];
+            f_temp /= (un_max - un_min);
+            f_temp *= 255;
+            un_brightness += (int)f_temp;
+            if(un_brightness > 255)
+                un_brightness = 255;
+        }
+        
+        heart_cnt ++;
+     // }
+       
+    }
+    
+    if(heart_cnt >= 150)
+    {
+      heart_flag = 2;
+      osal_stop_timerEx(simpleBLEPeripheral_TaskID, SBP_PERIODIC_EVT2);
+    }
+  }
+  
+}
+
 /*********************************************************************
  * @fn      performPeriodicTask
  *
@@ -752,6 +816,8 @@ static void peripheralStateNotificationCB( gaprole_States_t newState )
  * @return  none
  */
 uint8 timerCount2 = 0;
+uint8 timerCount3 = 0;
+bool dis_change_flag = 0;;
 static void performPeriodicTask( void )
 {
   uint8 tempbuf[12] = {0};
@@ -765,7 +831,7 @@ static void performPeriodicTask( void )
 
   osalTimeUpdate(  );
   osal_ConvertUTCTime(&Ti,osal_getClock());
-  
+  HalLcdWriteStringValue("      heart_cnt",heart_cnt,10,HAL_LCD_LINE_8);
   if(KEY_NeedPrcoess == 1)
   {
    // KEY_NeedPrcoess = 0;
@@ -835,12 +901,129 @@ static void performPeriodicTask( void )
         }break;
       case 3:
         {
-          DIS_Item = 0;
+          //heart_flag;
+          //heart_cnt;
+          
+          if((heart_flag == 1)&&(heart_cnt==0))
+          {
+            un_min = 0x3FFFF;
+            un_max = 0;
+            osal_start_timerEx( simpleBLEPeripheral_TaskID, SBP_PERIODIC_EVT2, SBP_PERIODIC_EVT_PERIOD2 );
+          }
+          if(heart_flag == 0)
+          {
+            timerCount3 = 0;
+            sprintf(displayBuf,"bmp");
+            HalLcdShowString(85,5,displayBuf,16);
+            sprintf(displayBuf,"%02d",n_heart_rate);
+            HalLcdShowString(30,3,displayBuf,32);
+            if(state == GAPROLE_CONNECTED)
+            {
+              HalLcdDrawBt(70,0,1);
+            }
+            else 
+            {
+              HalLcdDrawBt(70,0,0);
+            }
+            
+            sprintf(displayBuf,"%02d:%02d",Ti.hour,Ti.minutes);
+            HalLcdShowString(10,0,displayBuf,16);
+            if(Get_BatChargeState())
+            {
+              HalLcdDrawBattery(90,0,0xff);
+            }
+            else
+            {
+              BatteryCap = Get_BatCap() ;
+              HalLcdDrawBattery(90,0,BatteryCap);
+            }
+          }
+          else if(heart_flag == 1)
+          {
+            sprintf(displayBuf,"bmp");
+            HalLcdShowString(85,5,displayBuf,16);
+            //dis_change_flag ~= dis_change_flag;
+            if(dis_change_flag)
+            {
+              sprintf(displayBuf,"--");
+              HalLcdShowString(30,3,displayBuf,32);
+            }
+            else
+            {
+              sprintf(displayBuf,"--");
+              HalLcdShowString(30,3,displayBuf,32);
+            }
+            
+            if(state == GAPROLE_CONNECTED)
+            {
+              HalLcdDrawBt(70,0,1);
+            }
+            else 
+            {
+              HalLcdDrawBt(70,0,0);
+            }
+            
+            sprintf(displayBuf,"%02d:%02d",Ti.hour,Ti.minutes);
+            HalLcdShowString(10,0,displayBuf,16);
+            if(Get_BatChargeState())
+            {
+              HalLcdDrawBattery(90,0,0xff);
+            }
+            else
+            {
+              BatteryCap = Get_BatCap() ;
+              HalLcdDrawBattery(90,0,BatteryCap);
+            }
+          }
+          else if(heart_flag == 2)
+          {
+            maxim_heart_rate_and_oxygen_saturation(aun_ir_buffer, n_ir_buffer_length, aun_red_buffer, &n_sp02, &ch_spo2_valid, &n_heart_rate, &ch_hr_valid); 
+            
+            HalLcdClear();
+            HalLcdDisOn();
+          //  n_heart_rate -= 25;
+            sprintf(displayBuf,"%02d",n_heart_rate);
+            HalLcdShowString(30,3,displayBuf,32);
+            
+            heart_flag = 0;
+            heart_cnt = 0;
+          }
+          
+          //DIS_Item = 0;
         }break;
+      case 4:
+        {
+          timerCount3 ++;
+          //sprintf(displayBuf,"--");
+          //HalLcdShowString(40,3,displayBuf,32);
+        }break;
+    //  case 5:timerCount3 ++;
+      case 5:  
+        {
+          if(timerCount3 < 2)
+          {
+            DIS_Item = 3;
+            if(heart_flag == 0)
+            {
+              heart_flag = 1;
+              heart_cnt = 0;
+            }
+           // sprintf(displayBuf,"--");
+           // HalLcdShowString(40,3,displayBuf,32);
+          }
+          else 
+          {
+           // timerCount3 = 0;
+            heart_flag = 0;
+            heart_cnt = 0;
+           // DIS_Item = 0;
+          }
+        }
+        break;
     }
   }
     
- timerCount ++;
+  timerCount ++;
   timerCount2 ++;
  /*  tempbuf[0] = 0x20;
   tempbuf[1] = (Ti.year) / 1000 + '0';
@@ -884,7 +1067,7 @@ static void performPeriodicTask( void )
     timerCount = 0;
   }
   
-  if( timerCount2 > 10  ) {
+  if( timerCount2 > 20  ) {
     timerCount2 = 0;
     LCD_NeedRun = 0;
     KEY_NeedPrcoess = 0;
@@ -1054,7 +1237,7 @@ static void sendTask( void )
     
   HalLcdWriteStringValue( " value2:", value, 10, HAL_LCD_LINE_8 );*/
  // BLESendCurrentTemp();
-  
+  heart_get_task();
   
 }
 

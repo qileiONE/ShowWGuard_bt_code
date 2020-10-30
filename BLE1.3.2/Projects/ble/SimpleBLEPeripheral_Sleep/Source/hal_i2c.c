@@ -650,7 +650,7 @@ i2cLen_t HalI2CMax30102ReadFifo(uint8 address, uint8 Regaddress, uint32 *pun_red
 
   //read and clear status register
   HalI2CReadReg(address,0x00,1,&uch_temp);  //REG_INTR_STATUS_1
-  HalI2CReadReg(address,0x00,1,&uch_temp); //REG_INTR_STATUS_2
+  HalI2CReadReg(address,0x01,1,&uch_temp); //REG_INTR_STATUS_2
 
  // ach_i2c_data[0]=REG_FIFO_DATA;
   HalI2CInit( i2cClock_123KHZ );

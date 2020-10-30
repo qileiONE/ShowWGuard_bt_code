@@ -571,14 +571,24 @@ HAL_ISR_FUNCTION( halKeyPort1Isr, P1INT_VECTOR )
 #endif
   {
     halProcessKeyInterrupt();
-    //HalLcdWriteString("key", HAL_LCD_LINE_7 );
+    //HalLcdWriteString("key", HAL_LCD_LINE_7 ); 
+    if(LCD_NeedRun == 1)
+      DIS_Item ++;
     LCD_NeedRun = 1;
     KEY_NeedPrcoess = 1;
     timerCount2 = 0;
-    DIS_Item ++;
-    if(DIS_Item >= 4)  DIS_Item = 0;
-    HalLcdClear();
-    HalLcdDisOn();
+   
+    if(DIS_Item > 5)  
+    {
+      DIS_Item = 0;
+      HalLcdClear();
+      HalLcdDisOn();
+    }
+    if(DIS_Item < 4)
+    {
+      HalLcdClear();
+      HalLcdDisOn();
+    }
   }
 
   /*
