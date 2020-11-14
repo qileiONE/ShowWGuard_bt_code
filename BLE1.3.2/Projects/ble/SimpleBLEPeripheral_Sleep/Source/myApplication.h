@@ -67,5 +67,7 @@ void ADC_setRefference( uint8 reference );
 uint16 ADC_Read( uint8 channel );
 void Motor_ON(void);
 void Motor_OFF(void);
+void OutputLed_ON(void);
+void OutputLed_OFF(void);
 
 #endif

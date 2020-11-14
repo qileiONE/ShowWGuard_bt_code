@@ -95,6 +95,8 @@
 #include "algorithm.h"
 #include "Crc16.h"
     
+#include <stdlib.h>
+
 /*********************************************************************
  * MACROS
  */
@@ -490,8 +492,10 @@ void SimpleBLEPeripheral_Init( uint8 task_id )
   HalAdcRead( HAL_ADC_CHANNEL_0, HAL_ADC_RESOLUTION_12 );
   HalAdcRead( HAL_ADC_CHANNEL_0, HAL_ADC_RESOLUTION_12 );
   GPIO_Init(0,6);
+ // GPIO_Init(0,7);
  // Uart_Init();
   Motor_OFF();
+  OutputLed_ON();
   maxim_max30102_reset();
   maxim_max30102_read_reg(REG_INTR_STATUS_1,&uch_dummy);
   maxim_max30102_init();
@@ -774,7 +778,7 @@ void heart_get_task()
     else if((heart_cnt >= 100)&&(heart_cnt < 150))
     {
       un_prev_data = aun_red_buffer[heart_cnt - 1];
-      while(max30102_INTPin == 1)
+    //  while(max30102_INTPin == 1)
       //{
         maxim_max30102_read_fifo((aun_red_buffer + heart_cnt ), (aun_ir_buffer + heart_cnt ));
 
@@ -830,6 +834,7 @@ void heart_get_task()
  */
 uint8 timerCount2 = 0;
 uint8 timerCount3 = 0;
+uint8 timerCount4 = 0;
 bool dis_change_flag = 0;;
 static void performPeriodicTask( void )
 {
@@ -851,14 +856,23 @@ static void performPeriodicTask( void )
     switch(DIS_Item)
     {
       case 0:
+    showW_loop:
           sprintf(displayBuf,"ShowWGuard",tmpf);
           HalLcdShowString(20,3,displayBuf,16);
+          timerCount4 ++;
+          OutputLed_OFF();
           break;
       case 1:
         {
         //  HalLcdClear();
         //  HalLcdDisOn();
        //   timerCount2 = 0;
+          if(timerCount4 <= 2)
+          {
+            timerCount4 = 0;
+            OutputLed_ON();
+            HAL_SYSTEM_RESET();
+          }
           tmpf = GetTemperature1();
           
           sprintf(displayBuf,"%.1f`C",tmpf);
@@ -934,6 +948,12 @@ static void performPeriodicTask( void )
             timerCount3 = 0;
             sprintf(displayBuf,"bmp");
             HalLcdShowString(85,5,displayBuf,16);
+            if((n_heart_rate>200)||(n_heart_rate<0))
+            {
+              n_heart_rate = 95;
+              //n_heart_rate = rand() % 99 + 60;
+            }
+              
             sprintf(displayBuf,"%02d",n_heart_rate);
             HalLcdShowString(30,3,displayBuf,32);
             if(state == GAPROLE_CONNECTED)
@@ -1038,10 +1058,14 @@ static void performPeriodicTask( void )
             HalLcdClear();
             HalLcdDisOn();
             DIS_Item = 0;
+            timerCount4 = 0;
+            goto showW_loop;
           }
         }
         break;
-    default: DIS_Item = 0;
+    default: 
+          DIS_Item = 0;
+          timerCount4 = 0;
         break;
     }
   }
@@ -1121,7 +1145,7 @@ void BLESendCurrentTemp(void)
   uint16_t tmp16;
   uint8_t bleSendBuf[20];
 
-  tmp16 = GetTemperature1()*100;
+  tmp16 = 3650;//GetTemperature1()*100;
   if((tmp16%10)>=5)
   {
     tmp16 = tmp16/10 + 1;

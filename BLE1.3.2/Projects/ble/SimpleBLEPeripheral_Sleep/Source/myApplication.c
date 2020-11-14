@@ -238,7 +238,17 @@ void Motor_OFF(void)
 {
   GPIO_setLow(0,6);
 }
-    
+
+void OutputLed_ON(void)
+{
+ // GPIO_setLow(0,7);
+}
+
+void OutputLed_OFF(void)
+{
+ // GPIO_setHigh(0,7);
+}
+
 /* 启动一个 1ms 定时器 */
 uint8 Timer_1ms_start( uint8 task_id, uint16 event_id )
 {
