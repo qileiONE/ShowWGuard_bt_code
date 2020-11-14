@@ -1471,6 +1471,7 @@ void HalLcdDrawBt(uint8 x,uint8 y,uint8 flag)
 void HalLcdDisOn(void)
 {
   LCD_DisplayOn();
+  LCD_Set_Pos(0,0);
 }
 
 void HalLcdDisOff(void)

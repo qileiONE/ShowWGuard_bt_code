@@ -252,7 +252,7 @@ float GetTemperature1(void)
   {
   }
     temperature = temperatureNTC;
- /* 
+  
   if(temperature > 37.0f)
   {
     temperature = temperature;
@@ -265,7 +265,9 @@ float GetTemperature1(void)
       temperature = (float)(temperature * tmpCaliK);
     }          
     temperature = (float)(temperature + tmpCaliB);
-  }*/
+  }
+    if((temperature > 50) || (temperature < 0))
+      temperature = 44.4;
   return  temperature;
 }
 

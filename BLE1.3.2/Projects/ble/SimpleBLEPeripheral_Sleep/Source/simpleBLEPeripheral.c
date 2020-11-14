@@ -781,7 +781,7 @@ void heart_get_task()
     else if((heart_cnt >= 100)&&(heart_cnt < 150))
     {
       un_prev_data = aun_red_buffer[heart_cnt - 1];
-    //  while(max30102_INTPin == 1)
+      while(max30102_INTPin == 1)
       //{
         maxim_max30102_read_fifo((aun_red_buffer + heart_cnt ), (aun_ir_buffer + heart_cnt ));
 
@@ -1169,7 +1169,7 @@ void BLESendCurrentTemp(void)
   uint16_t tmp16;
   uint8_t bleSendBuf[20];
 
-  tmp16 = 3650;//GetTemperature1()*100;
+  tmp16 = GetTemperature1()*100;
   if((tmp16%10)>=5)
   {
     tmp16 = tmp16/10 + 1;
@@ -1385,7 +1385,7 @@ static void simpleProfileChangeCB( uint8 paramID )
               buf_D[3] = *(newChar6Value+2);
               tmp32 = *(int32_t*)buf_D;
 
-              tmpCaliK = (float)tmp32/10000;
+              tmpCaliK = (float)tmp32/100;
 
               buf_D[0] = *(newChar6Value+9);
               buf_D[1] = *(newChar6Value+8);
@@ -1393,14 +1393,16 @@ static void simpleProfileChangeCB( uint8 paramID )
               buf_D[3] = *(newChar6Value+6);
               tmp32 = *(int32_t*)buf_D;
 
-              tmpCaliB = (float)tmp32/10000;
+              tmpCaliB = (float)tmp32/100;
 
               saveTempCali(tmpCaliK,tmpCaliB);
               BLESendRece(newChar6Value[1],0);
           }
           else if(newChar6Value[1] == 0x40)
           {
+            Motor_ON();
             BLESendToCard();
+            Motor_OFF();
           }
         }
 
