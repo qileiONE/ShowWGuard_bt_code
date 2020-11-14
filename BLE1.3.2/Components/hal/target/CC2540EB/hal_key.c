@@ -584,11 +584,11 @@ HAL_ISR_FUNCTION( halKeyPort1Isr, P1INT_VECTOR )
       HalLcdClear();
       HalLcdDisOn();
     }
-    if(DIS_Item < 4)
-    {
+  //  if(DIS_Item < 5)
+  //  {
       HalLcdClear();
       HalLcdDisOn();
-    }
+  //  }
   }
 
   /*

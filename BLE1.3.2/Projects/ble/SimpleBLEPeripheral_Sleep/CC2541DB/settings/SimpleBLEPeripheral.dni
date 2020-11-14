@@ -1,5 +1,5 @@
 [DebugChecksum]
-Checksum=659841637
+Checksum=1637542236
 [DisAssemblyWindow]
 NumStates=_ 1
 State 1=_ 1
@@ -32,11 +32,7 @@ ShowArgs=0
 [Disassembly]
 MixedMode=1
 [Breakpoints]
-Bp0=_ "STD_CODE" "{$PROJ_DIR$\..\Source\eeprom.c}.98.3" 1 0 0 0 "" 0 ""
-Bp1=_ "STD_CODE" "{$PROJ_DIR$\..\Source\eeprom.c}.100.5" 1 0 0 0 "" 0 ""
-Bp2=_ "STD_CODE" "{$PROJ_DIR$\..\Source\eeprom.c}.104.5" 1 0 0 0 "" 0 ""
-Bp3=_ "STD_CODE" "{$PROJ_DIR$\..\Source\eeprom.c}.108.5" 0 0 0 0 "" 0 ""
-Count=4
+Count=0
 [ChipconEmu]
 Stop timers on halt=0
 Leave target running=1

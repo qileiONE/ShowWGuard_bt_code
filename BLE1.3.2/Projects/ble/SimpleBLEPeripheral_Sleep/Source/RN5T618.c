@@ -175,13 +175,21 @@ unsigned int Get_BatCap(void)
 
   batcapvalue = (float)(avaicapvalue * 100)/fullcapvalue;*/
   //	
-  uint8_t	buffer[1];
-  float batcapvalue;
-  HalI2CReadReg_2(RN5T618_Add, 0XE1, 1, &buffer[0]);
+ // uint8_t	buffer[1];
+ // float batcapvalue;
+ // HalI2CReadReg_2(RN5T618_Add, 0XE1, 1, &buffer[0]);
  // I2C_ReadHaveAdd(&RN5T618_I2C,&buffer[0],1,0XE1,RN5T618_Add);
   
-  batcapvalue = buffer[0];
-  return (unsigned int )batcapvalue;
+//  batcapvalue = buffer[0];
+  uint32 BatteryV;
+  uint32 tmp32;
+  BatteryV = Get_BatVoltage();
+  if(BatteryV > 3000)
+    tmp32 = (BatteryV - 3300)*100/(4200-3300);
+  else 
+    tmp32 = 5;
+ // batcapvalue = tmp32;
+  return (unsigned int )tmp32;
 }
 
 uint8_t Get_BatChargeState(void)

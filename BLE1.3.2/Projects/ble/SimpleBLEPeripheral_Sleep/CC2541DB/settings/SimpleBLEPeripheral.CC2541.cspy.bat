@@ -25,7 +25,7 @@ if not "%~1" == "" goto debugFile
 
 @echo on 
 
-"C:\Program Files (x86)\IAR Systems\Embedded Workbench 7.2\common\bin\cspybat" -f "E:\work\守卫手环项目\code\BT\蓝牙从机V3.0\ShowWGuard\BLE1.3.2\Projects\ble\SimpleBLEPeripheral_Sleep\CC2541DB\settings\SimpleBLEPeripheral.CC2541.general.xcl" --backend -f "E:\work\守卫手环项目\code\BT\蓝牙从机V3.0\ShowWGuard\BLE1.3.2\Projects\ble\SimpleBLEPeripheral_Sleep\CC2541DB\settings\SimpleBLEPeripheral.CC2541.driver.xcl" 
+"C:\Program Files (x86)\IAR Systems\Embedded Workbench 7.2\common\bin\cspybat" -f "E:\work\守卫手环项目\code\BT\蓝牙从机V3.1\蓝牙从机V3.0\ShowWGuard\BLE1.3.2\Projects\ble\SimpleBLEPeripheral_Sleep\CC2541DB\settings\SimpleBLEPeripheral.CC2541.general.xcl" --backend -f "E:\work\守卫手环项目\code\BT\蓝牙从机V3.1\蓝牙从机V3.0\ShowWGuard\BLE1.3.2\Projects\ble\SimpleBLEPeripheral_Sleep\CC2541DB\settings\SimpleBLEPeripheral.CC2541.driver.xcl" 
 
 @echo off 
 goto end 
@@ -34,7 +34,7 @@ goto end
 
 @echo on 
 
-"C:\Program Files (x86)\IAR Systems\Embedded Workbench 7.2\common\bin\cspybat" -f "E:\work\守卫手环项目\code\BT\蓝牙从机V3.0\ShowWGuard\BLE1.3.2\Projects\ble\SimpleBLEPeripheral_Sleep\CC2541DB\settings\SimpleBLEPeripheral.CC2541.general.xcl" "--debug_file=%~1" --backend -f "E:\work\守卫手环项目\code\BT\蓝牙从机V3.0\ShowWGuard\BLE1.3.2\Projects\ble\SimpleBLEPeripheral_Sleep\CC2541DB\settings\SimpleBLEPeripheral.CC2541.driver.xcl" 
+"C:\Program Files (x86)\IAR Systems\Embedded Workbench 7.2\common\bin\cspybat" -f "E:\work\守卫手环项目\code\BT\蓝牙从机V3.1\蓝牙从机V3.0\ShowWGuard\BLE1.3.2\Projects\ble\SimpleBLEPeripheral_Sleep\CC2541DB\settings\SimpleBLEPeripheral.CC2541.general.xcl" "--debug_file=%~1" --backend -f "E:\work\守卫手环项目\code\BT\蓝牙从机V3.1\蓝牙从机V3.0\ShowWGuard\BLE1.3.2\Projects\ble\SimpleBLEPeripheral_Sleep\CC2541DB\settings\SimpleBLEPeripheral.CC2541.driver.xcl" 
 
 @echo off 
 :end

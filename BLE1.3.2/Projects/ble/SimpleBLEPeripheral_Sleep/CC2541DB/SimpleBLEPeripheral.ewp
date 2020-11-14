@@ -293,7 +293,7 @@
         </option>
         <option>
           <name>CCDefines</name>
-          <state>INT_HEAP_LEN=1000</state>
+          <state>INT_HEAP_LEN=2000</state>
           <state>HALNODEBUG</state>
           <state>OSAL_CBTIMER_NUM_TASKS=1</state>
           <state>HAL_AES_DMA=TRUE</state>

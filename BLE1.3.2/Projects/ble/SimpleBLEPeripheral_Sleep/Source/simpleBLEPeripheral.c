@@ -105,7 +105,7 @@
 
 // How often to perform periodic event
 #define SBP_PERIODIC_EVT_PERIOD                   1000
-#define SBP_PERIODIC_EVT_PERIOD2                    3// 发送数据的周期，可以修改，现在是 1 秒发一次
+#define SBP_PERIODIC_EVT_PERIOD2                    2// 发送数据的周期，可以修改，现在是 1 秒发一次
 
 // What is the advertising interval when device is discoverable (units of 625us, 160=100ms)
 #define DEFAULT_ADVERTISING_INTERVAL          (160*10)
@@ -120,10 +120,10 @@
 #endif  // defined ( CC2540_MINIDK )
 
 // Minimum connection interval (units of 1.25ms, 80=100ms) if automatic parameter update request is enabled
-#define DEFAULT_DESIRED_MIN_CONN_INTERVAL     800//20
+#define DEFAULT_DESIRED_MIN_CONN_INTERVAL     1600//800//20
 
 // Maximum connection interval (units of 1.25ms, 800=1000ms) if automatic parameter update request is enabled
-#define DEFAULT_DESIRED_MAX_CONN_INTERVAL     800//20
+#define DEFAULT_DESIRED_MAX_CONN_INTERVAL     1600//800//20
 
 // Slave latency to use if automatic parameter update request is enabled
 #define DEFAULT_DESIRED_SLAVE_LATENCY         0
@@ -464,6 +464,16 @@ void SimpleBLEPeripheral_Init( uint8 task_id )
   
   /* 得到 mac 地址 */
   GAPRole_GetParameter( GAPROLE_CONN_BD_ADDR, macAddr );
+ 
+
+   macAddr[5]=XREG(0x780E); // 直接指向指针内容  
+   macAddr[4]=XREG(0x780F);  
+   macAddr[3]=XREG(0x7810);  
+   macAddr[2]=XREG(0x7811);                // define 函数直接读出数据  
+   macAddr[1]=XREG(0x7812);  
+   macAddr[0]=XREG(0x7813);  
+  
+ 
 
 //10  标志SBP_START_DEVICE_EVT启动该event
   // Setup a delayed profile startup
@@ -769,7 +779,7 @@ void heart_get_task()
         maxim_max30102_read_fifo((aun_red_buffer + heart_cnt ), (aun_ir_buffer + heart_cnt ));
 
       //calculate the brightness of the LED
-        if(aun_red_buffer[heart_cnt + 100] > un_prev_data)
+       /* if(aun_red_buffer[heart_cnt + 100] > un_prev_data)
         {
             f_temp = aun_red_buffer[heart_cnt + 100] - un_prev_data;
             f_temp /= (un_max - un_min);
@@ -788,7 +798,7 @@ void heart_get_task()
             un_brightness += (int)f_temp;
             if(un_brightness > 255)
                 un_brightness = 255;
-        }
+        }*/
         
         heart_cnt ++;
      // }
@@ -846,8 +856,8 @@ static void performPeriodicTask( void )
           break;
       case 1:
         {
-         // HalLcdClear();10
-         // HalLcdDisOn();
+        //  HalLcdClear();
+        //  HalLcdDisOn();
        //   timerCount2 = 0;
           tmpf = GetTemperature1();
           
@@ -888,8 +898,8 @@ static void performPeriodicTask( void )
         }break;
       case 2:
         {
-         // HalLcdClear();
-         // HalLcdDisOn();
+        //  HalLcdClear();
+        //  HalLcdDisOn();
          // timerCount2 = 0;
           if(Get_BatChargeState())
           {
@@ -909,11 +919,14 @@ static void performPeriodicTask( void )
         {
           //heart_flag;
           //heart_cnt;
+        //  HalLcdClear();
+        //  HalLcdDisOn();
           
           if((heart_flag == 1)&&(heart_cnt==0))
           {
             un_min = 0x3FFFF;
             un_max = 0;
+            //maxim_max30102_reset();
             osal_start_timerEx( simpleBLEPeripheral_TaskID, SBP_PERIODIC_EVT2, SBP_PERIODIC_EVT_PERIOD2 );
           }
           if(heart_flag == 0)
@@ -956,7 +969,7 @@ static void performPeriodicTask( void )
             }
             else
             {
-              sprintf(displayBuf,"   ");
+              sprintf(displayBuf,"- -");
               HalLcdShowString(30,3,displayBuf,32);
             }
             
@@ -987,8 +1000,8 @@ static void performPeriodicTask( void )
             
             HalLcdClear();
             HalLcdDisOn();
-          //  n_heart_rate -= 25;
-            sprintf(displayBuf,"%02d",n_heart_rate);
+          //  n_heart_rate = 25;
+            sprintf(displayBuf,"%d",ch_hr_valid);
             HalLcdShowString(30,3,displayBuf,32);
             
             heart_flag = 0;
@@ -1022,9 +1035,13 @@ static void performPeriodicTask( void )
            // timerCount3 = 0;
             heart_flag = 0;
             heart_cnt = 0;
-           // DIS_Item = 0;
+            HalLcdClear();
+            HalLcdDisOn();
+            DIS_Item = 0;
           }
         }
+        break;
+    default: DIS_Item = 0;
         break;
     }
   }
@@ -1073,10 +1090,11 @@ static void performPeriodicTask( void )
     timerCount = 0;
   }
   
-  if( timerCount2 > 20  ) {
+  if( timerCount2 > 15  ) {
     timerCount2 = 0;
     LCD_NeedRun = 0;
     KEY_NeedPrcoess = 0;
+    HalLcdClear();
     HalLcdDisOff();
   }
   
@@ -1192,10 +1210,10 @@ void BLESendRece(uint8_t cmd,uint8_t status)
 
 void BLESendToCard(void)
 {
-    uint8_t i;
+    uint8_t i;//,j;
     uint16_t crc;
     uint16_t data;
-    uint8_t bleSendBuf[205];
+    uint8_t bleSendBuf[110] = {0};
     UTCTimeStruct Ti;
     osalTimeUpdate(  );
     
@@ -1209,26 +1227,32 @@ void BLESendToCard(void)
     bleSendBuf[7] = macAddr[5];
     bleSendBuf[8] = 0;
     bleSendBuf[9] = 1;
-    bleSendBuf[10] = 96;
+    bleSendBuf[10] = 48;
     
-    for(i=0;i<96;i++)
+    //j=0;
+    for(i=1;i<96;i+=2)
     {
-        data = readTempPoint(Ti.year,Ti.month,Ti.day,i+1);
-        bleSendBuf[11 + i*2] = data >> 8;
-        bleSendBuf[12 + i*2] = data & 0xff;
+      
+       data = readTempPoint(Ti.year,Ti.month,Ti.day,i+1);
+        bleSendBuf[11 + i - 1] = data >> 8;
+        bleSendBuf[12 + i] = data & 0xff;
+      //  j++;
     }
     
-    crc = CRC16(bleSendBuf,11 + 96*2);
+    crc = CRC16(bleSendBuf,11 + 48*2);
     
-    bleSendBuf[11 + 96*2] = crc >> 8;
-    bleSendBuf[12 + 96*2] = crc & 0xff;
+    bleSendBuf[11 + 48*2] = crc >> 8;
+    bleSendBuf[12 + 48*2] = crc & 0xff;
     
     
-    // simpleBLE_SendData(nGUA_ConnHandle,bleSendBuf,13 + 96*2); 
+   // simpleBLE_SendData(nGUA_ConnHandle,bleSendBuf,13 + 96*2); 
    
-    for(i=0;i<10;i++)
-      simpleBLE_SendData(nGUA_ConnHandle,bleSendBuf+20*i,20);  
-    simpleBLE_SendData(nGUA_ConnHandle,bleSendBuf+200,5);  
+    for(i=0;i<5;i++)
+    simpleBLE_SendData(nGUA_ConnHandle,bleSendBuf+20*i,20);  
+    simpleBLE_SendData(nGUA_ConnHandle,bleSendBuf+100,10);
+    //for(i=6;i<2;i++)
+   // simpleBLE_SendData(nGUA_ConnHandle,bleSendBuf+20*i,20); 
+    //simpleBLE_SendData(nGUA_ConnHandle,bleSendBuf+200,5);  
 }
 
 static void sendTask( void )
@@ -1289,10 +1313,10 @@ static void simpleProfileChangeCB( uint8 paramID )
       GAPRole_GetParameter(GAPROLE_CONNHANDLE, &nGUA_ConnHandle); 
       SimpleProfile_GetParameter( SIMPLEPROFILE_CHAR6, newChar6Value, &returnBytes );
       
-      if(returnBytes > 0) {
+      if(returnBytes > 3) {
         LCD_NeedRun = 1;
-        HalLcdDisOn();
-        HalLcdWriteString(" Received: ", HAL_LCD_LINE_8 );
+      //  HalLcdDisOn();
+      //  HalLcdWriteString(" Received: ", HAL_LCD_LINE_8 );
         //HalLcdWriteString((char*)newChar6Value, HAL_LCD_LINE_7 );
      //   BLESendCurrentTemp();
         crc = CRC16(newChar6Value,returnBytes);
@@ -1332,7 +1356,7 @@ static void simpleProfileChangeCB( uint8 paramID )
           }
         }
 
-        
+       returnBytes = 0; 
       }
     }  
     break;
