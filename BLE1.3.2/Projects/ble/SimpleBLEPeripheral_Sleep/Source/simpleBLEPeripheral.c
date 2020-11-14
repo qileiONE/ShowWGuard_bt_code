@@ -97,6 +97,8 @@
     
 #include <stdlib.h>
 
+#include "uart.h"
+
 /*********************************************************************
  * MACROS
  */
@@ -484,6 +486,7 @@ void SimpleBLEPeripheral_Init( uint8 task_id )
   HalI2CInit( i2cClock_123KHZ );
   PowerRN5T618_init();
   HalAdcInit();
+  InitUart();
   HalAdcSetReference( HAL_ADC_REF_AVDD );
   //¶Á¼¸´ÎADCÎÈ¶¨
   HalAdcRead( HAL_ADC_CHANNEL_0, HAL_ADC_RESOLUTION_12 );
@@ -838,10 +841,11 @@ uint8 timerCount4 = 0;
 bool dis_change_flag = 0;;
 static void performPeriodicTask( void )
 {
-  uint8 tempbuf[12] = {0};
+  uint8 tempbuf[15] = {0};
   char displayBuf[20];
   float tmpf;
   uint16 CurrentTemp;
+  //uint16 crc_value;
   uint8 num_pos;
   //uint32 temp32;
   uint16_t BatteryCap;
@@ -850,6 +854,7 @@ static void performPeriodicTask( void )
   osalTimeUpdate(  );
   osal_ConvertUTCTime(&Ti,osal_getClock());
   //HalLcdWriteStringValue("      heart_cnt",heart_cnt,10,HAL_LCD_LINE_8);
+  
   if(KEY_NeedPrcoess == 1)
   {
    // KEY_NeedPrcoess = 0;
@@ -1105,10 +1110,29 @@ static void performPeriodicTask( void )
       num_pos = 4;
     else 
       num_pos = 1;
+    UartSendString(tempbuf,3);
     num_pos = num_pos + (Ti.hour*4);
     tmpf = GetTemperature1();
     CurrentTemp = tmpf * 10;
     saveTempPoint(Ti.year,Ti.month,Ti.day,num_pos,CurrentTemp);
+    tempbuf[0] = 0x04;
+    tempbuf[1] = 0x00;
+    tempbuf[2] = macAddr[0];
+    tempbuf[3] = macAddr[1];
+    tempbuf[4] = macAddr[2];
+    tempbuf[5] = macAddr[3];
+    tempbuf[6] = macAddr[4];
+    tempbuf[7] = macAddr[5];
+    tempbuf[8] = 0;
+    tempbuf[9] = 0x04;
+    tempbuf[10] = num_pos-1;
+    tempbuf[11] = n_heart_rate;
+    tempbuf[12] = CurrentTemp >> 8;
+    tempbuf[13] = CurrentTemp & 0xff;
+    CurrentTemp = crc_calc(tempbuf,14);
+    tempbuf[14] = (CurrentTemp & 0xff00) >> 8;
+    tempbuf[15] = CurrentTemp & 0x00ff; 
+    UartSendString(tempbuf,16);
     LCD_NeedRun = 1;
    // HalLcdWriteString( "Alarm Clock", HAL_LCD_LINE_7 );
     timerCount = 0;

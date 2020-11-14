@@ -177,6 +177,12 @@
     <file>
       <name>$PROJ_DIR$\..\Source\SimpleBLEPeripheral_Main.c</name>
     </file>
+    <file>
+      <name>$PROJ_DIR$\..\Source\uart.c</name>
+    </file>
+    <file>
+      <name>$PROJ_DIR$\..\Source\uart.h</name>
+    </file>
   </group>
   <group>
     <name>HAL</name>
